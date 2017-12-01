@@ -15,24 +15,23 @@ public class dataGenerator {
 
 	static String testFolder;
 	static String pathFolder;
-	static int nSimulacoes = 5;
-	static String jobId="job1";
+	static int nSimulacoes = 10;
 	
-	static int nAgents = 10;
-	static int ntasksCompL =20;
-	static int ntasksCompN = 0;
-	static int ntasksCompS = 1;
-	static int limitAgents = 80; //tasks por agent
-	static int aijMax=40;
+	static int nAgents = 3;
+	static int ntasksCompL = 3;
+	static int ntasksCompN = 3;
+	static int ntasksCompS = 3;
+	static int limitAgents = 6; //tasks por agent
+	static int aijMax=6;
 	static int nroles = 4;
 	static int ncapabilities=4;
 	static int ncapRole=3; //maximo de capacidades por role
 	//setar tasks a gerar
-		static int nsubTasksL=3;//maximo de subtasks de uma tarefa composta L
-		static int nsubTasksN=0;//maximo de subtasks de uma tarefa composta N
-		static int nsubTasksS=2;//maximo de subtasks de uma tarefa composta N
-	//forcar todas as capacidaes nos agentes?
-	static	boolean forceAgentCap=true;
+	static int nsubTasksL=3;//maximo de subtasks de uma tarefa composta L
+	static int nsubTasksN=2;//maximo de subtasks de uma tarefa composta N
+	static int nsubTasksS=2;//maximo de subtasks de uma tarefa composta S
+	//forcar todas as capacidades nos agentes?
+	static	boolean forceAgentCap=false;
 
 	
 	static ArrayList<String> agents = new ArrayList<String>();
@@ -52,14 +51,14 @@ public class dataGenerator {
 	//static HashMap tasksPayoffs=new HashMap();
 	
 	static AppendToFile rfile; 
+	static AppendToFile rfiletest; 
 	static AppendToFile rfile2;
 	static AppendToFile rfileJacamo;
 	static AppendToFile rfileGLPK;
 	
-	static int simulacaoAtual=0;
 	
 public static void main(String[] args) {
-	//dataAgents(); //para cada agente e chama data para for�a bruta - PRINT NA TELA
+	//dataAgents(); //para cada agente e chama data para forï¿½a bruta - PRINT NA TELA
 	//dataJcm(); //para adicionar no arquivo jacamo
 	//dataAgNetwork(); //arquivo no agNet
 
@@ -71,7 +70,7 @@ public static void main(String[] args) {
 /* end*************PARTE ARQUIVO EXEC	**************** */	
 	
 	for (int test=1;test<=nSimulacoes;test++){
-		simulacaoAtual=test;
+		
 		agents.clear();
 		roles.clear();
 		capabilities.clear();
@@ -101,7 +100,7 @@ public static void main(String[] args) {
 	//rfileJacamo.appendLine("timeout 5 > NUL");
 	rfileJacamo.appendLine("echo %time%");
 	rfileJacamo.appendLine("");
-	rfileJacamo.appendLine("\"C:\\Program Files\\Java\\jdk1.8.0_144\\bin\\java\" -classpath C:\\MASSource\\jacamo-0.7-SNAPSHOT\\libs\\ant-launcher-1.10.1.jar org.apache.tools.ant.launch.Launcher -e -f  D:\\MAScode\\taskAllocProcessTestNamespaceReallocSSIA\\bin\\taskAllocProcess"+nAgents+".xml"); 
+	rfileJacamo.appendLine("java -classpath C:\\MAS_Contest\\jacamo-0.5\\lib\\ant-launcher.jar org.apache.tools.ant.launch.Launcher -e -f C:\\MAS_Contest\\Workspace_Eclipse_Luna2\\aAMAS_auction_proposal_CNCLSD\\bin\\aAMAS_auction_proposal_CNCLSD.xml"); 
 	rfileJacamo.appendLine("");
 	rfileJacamo.appendLine("copy "+jacamoProjectFolder+"ResultTestData.txt "+pathFolder);
 	rfileJacamo.appendLine("del "+jacamoProjectFolder+"ResultTestData.txt");
@@ -176,12 +175,11 @@ public static void dataAgents_toFile() {
 		rfile.appendLine("//DADOS DO r"+r);
 		rfile.appendLine("//"+agentDesc);
 		
-		rfile.appendLine("{ include(\"identifyRolesTasks.asl\") }");
+		rfile.appendLine("{ include(\"common.asl\") }");
 		rfile.appendLine("");
 		
 		rfile.appendLine("/* Initial beliefs */");
 		rfile.appendLine("agents("+nAgents+"). //number of agents");
-		rfile.appendLine("simulacao("+simulacaoAtual+"). //simulacao atual");
 		rfile.appendLine("");
 
 		rfile.appendLine("/* capabilities*/");
@@ -190,8 +188,7 @@ public static void dataAgents_toFile() {
 		agCap = agentX.getCapabilities();
 		
 		for (int c=0;c<agCap.size();c++){
-				//rfile.appendLine("capability(\""+agCap.get(c)+"\").");
-			rfile.appendLine("capability("+agCap.get(c)+").");
+				rfile.appendLine("capability(\""+agCap.get(c)+"\").");
 		}
 		rfile.appendLine("");
 		
@@ -211,11 +208,11 @@ public static void dataAgents_toFile() {
 	    String nameT=(String)pair.getKey();    
 	    int valueT=(int)pair.getValue();
 	   // System.out.println("TaskPayoffX.put("+nameT+","+valueT+");");
-	    rfile.appendLine("aij("+nameT+","+valueT+").");
+	    rfile.appendLine("aij(\""+nameT+"\","+valueT+").");
 	}
 	
 	rfile.appendLine(" ");
-	rfile.appendLine("!taBlackboardRolesTasks::perceptBlackboard(\"role_capability\",\"black_board\"). // initial goal");
+	rfile.appendLine("!start. // initial goal");
 
 //	dataForcaBruta(r,aij);
 
@@ -257,7 +254,7 @@ public static void dataAnnouncer_toFile() {
 			ArrayList<String> roleCap = new ArrayList<String>();
 			roleCap=roleX.getCapabilities();
 			for (int cap=0;cap<roleCap.size();cap++){
-			rfile.appendLine("!announceRoleCapability("+roleDesc+","+roleCap.get(cap)+").");
+			rfile.appendLine("!announceRoleCapability(\""+roleDesc+"\",\""+roleCap.get(cap)+"\").");
 			}
 		}
 		rfile.appendLine("");
@@ -270,14 +267,14 @@ public static void dataAnnouncer_toFile() {
 			taskL = taskX.getTask();
 			tasktypeL = taskX.getTaskType();
 			roleL = taskX.getRole();
-			rfile.appendLine("!announce_task("+jobId+","+subtaskL+","+taskL+","+tasktypeL+","+roleL+""+").");
+			rfile.appendLine("!announce_task(\""+subtaskL+"\",\""+taskL+"\",\""+tasktypeL+"\",\""+roleL+"\""+").");
 		}
 		rfile.appendLine("");
 
 		
 	
 	rfile.appendLine(" ");
-	rfile.appendLine("!completeAnnounce("+jobId+").");
+	rfile.appendLine("!completeAnnounce.");
 
 
 	rfile.appendLine("");
@@ -325,7 +322,7 @@ public static void populateRoleCapabilities() {
 		for (int c=1;c<=qtdCap;c++){
 			capN = rn.nextInt(ncapabilities);
 			capability=capabilities.get(capN);
-			//TO_DO fazer la�o garantir capability ja nao est� na lista
+			//TO_DO fazer laï¿½o garantir capability ja nao estï¿½ na lista
 			//nao vai interferir no momento
 			if (roleX.existCapabily(capability))
 				c=c-1;
@@ -502,7 +499,7 @@ public static void checkRolesAgents() {
 			//if ((qtdRoleX>(qtdRoleAgX*limitAgents*0.8)) || ((int)rolesQtd.get(roleDesc)==0)) {
 			if ((qtdRoleX>(qtdRoleAgX*limitAgents*0.8)) || (rolesQtd.containsKey(roleDesc)==false)) {
 				
-				//ver a diferença e adicionar esse nro de roles nos agentes
+				//ver a diferenÃ§a e adicionar esse nro de roles nos agentes
 				Double qtdRoleAddX=qtdRoleX-(qtdRoleAgX*limitAgents*0.8);
 				int qtdRoleAdd = qtdRoleAddX.intValue();
 				if ((qtdRoleAdd+1)<=limitAgents)
@@ -885,7 +882,7 @@ public static void dataPlanner_toFile() {
 
 	rfile.appendLine(";para validar o total somar o valor dos c's no resultado.");
 	rfile.appendLine(";por exemplo c1 + c5 + c4 = 10 de custo.");
-	rfile.appendLine(";pois o custo total apresentado � para minimiza��o.");
+	rfile.appendLine(";pois o custo total apresentado ï¿½ para minimizaï¿½ï¿½o.");
 	rfile.appendLine("");
 	rfile.appendLine("(define (problem pb2)");
 	rfile.appendLine("(:domain sampling)");
@@ -960,8 +957,8 @@ public static void dataPlanner_toFile() {
 		rfile.appendLine("(= (total-cost) 0)");
 		
 		//(= (pay c1) 1)
-		//aqui o valor de p vai ser invertido para funcionar no planner como se fosse maximiza��o
-		//pois o planner lida apenas com minimiza��o
+		//aqui o valor de p vai ser invertido para funcionar no planner como se fosse maximizaï¿½ï¿½o
+		//pois o planner lida apenas com minimizaï¿½ï¿½o
 		for (int p=0;p<=(aijMax*nsubTasksS);p++){
 			rfile.appendLine("(= (pay c"+p+") "+((aijMax*nsubTasksS)-p)+")");
 		}
@@ -1139,48 +1136,137 @@ public static void dataGLPK_toFile() {
 	HashMap sdTasks=new HashMap();
 	
 	rfile= new AppendToFile(pathFolder+"glpk"+nAgents+".mod",false);
-
+	rfiletest = new AppendToFile(pathFolder+"glpk"+nAgents+"test.mod",false);
+	
 	rfile.appendLine("set ROBOTS;      # i Robots");
+	rfiletest.appendLine("set ROBOTS;       # i Robots");
+	
 	rfile.appendLine("set TASKS;       # j Tasks");
+	rfiletest.appendLine("set TASKS;        # j Tasks");
+	
 	rfile.appendLine("set SUBTASKS;    # k Subtasks");
+	rfiletest.appendLine("set SUBTASKS;     # k Subtasks");
+	
+	rfiletest.appendLine("set CAPABILITIES; # x Capabilities");
+	rfiletest.appendLine("set ROLES;				# y Roles");
+	
 	rfile.appendLine("");
+	rfiletest.appendLine("");
 	
 	rfile.appendLine("param Lmin{TASKS}, integer;        # Minimum number of subtasks each robot can take for each task type");
+	rfiletest.appendLine("param Lmin{TASKS}, integer;        # Minimum number of subtasks each robot can take for each task type");
+	
 	rfile.appendLine("param Lmax{TASKS}, integer;        # Maximum number of subtasks each robot can take for each task type");
+	rfiletest.appendLine("param Lmax{TASKS}, integer;        # Maximum number of subtasks each robot can take for each task type");
+	
 	rfile.appendLine("param S{SUBTASKS}, integer;                  # size the subtask occupies in the robot task limit");
+	rfiletest.appendLine("param S{SUBTASKS}, integer;        # Size the subtask occupies in the robot task limit");
+	
 	rfile.appendLine("");
+	rfiletest.appendLine("");
 	
 	rfile.appendLine("param U{ROBOTS,SUBTASKS}, integer;        # Utility of subtask to each robot");
+	rfiletest.appendLine("param U{ROBOTS,SUBTASKS}, integer;        # Utility of subtask to each robot");
+	
 	rfile.appendLine("param P{TASKS,SUBTASKS}, binary;          # Task structure: which subtasks belong to which task");
+	rfiletest.appendLine("param P{TASKS,SUBTASKS}, binary;          # Task structure: which subtasks belong to which task");
+	
 	rfile.appendLine("param N{TASKS}, integer;                  # Task structure: the number of subtasks of each task");
+	rfiletest.appendLine("param N{TASKS}, integer;                  # Task structure: the number of subtasks of each task");
+	
 	rfile.appendLine("param L{ROBOTS}, integer;                 # Task limit: the maximum number of tasks each robot can take");
+	rfiletest.appendLine("param L{ROBOTS}, integer;                 # Task limit: the maximum number of tasks each robot can take");
+	
 	rfile.appendLine("");
+	rfiletest.appendLine("");
+	
+	
+	rfiletest.appendLine("param G{ROLES,CAPABILITIES}, binary;		# Role structure: which capabilities each role requires");
+	rfiletest.appendLine("param V{ROBOTS,CAPABILITIES}, binary;		# Robot structure: which capabilities each robot have");
+	rfiletest.appendLine("param Z{ROBOTS,ROLES}, binary;					# Robot structure: which roles each robot is able to play");
+	rfiletest.appendLine("param H{SUBTASKS,ROLES}, binary;				# Subtask structure: which roles each subtask requires");
+	rfiletest.appendLine("");
+	
+	rfiletest.appendLine("param C, integer;							# Total number of capabilities ");
+	rfiletest.appendLine("param R, integer;							# Total number of roles");
+	rfiletest.appendLine("");
 	
 	rfile.appendLine("var a{ROBOTS,TASKS}, binary;              # to check whether the allocation below has associated a robot with an overall task");
+	rfiletest.appendLine("var a{ROBOTS,TASKS}, binary;              # To check whether the allocation below has associated a robot with an overall task");
+	
 	rfile.appendLine("var f{ROBOTS,SUBTASKS}, binary;           # this is the allocation we want");
+	rfiletest.appendLine("var f{ROBOTS,SUBTASKS}, binary;           # This is the allocation we want");
+	
 	rfile.appendLine("");
+	rfiletest.appendLine("");
 							 
 	rfile.appendLine("maximize");
+	rfiletest.appendLine("maximize");
+	
 	rfile.appendLine("   objective: sum{i in ROBOTS, k in SUBTASKS} f[i,k]*U[i,k];");
+	rfiletest.appendLine("   objective: sum{i in ROBOTS, k in SUBTASKS} f[i,k]*U[i,k];");
+	
 	rfile.appendLine("");
-	   
+	rfiletest.appendLine("");
+	
 	rfile.appendLine("subject to");
+	rfiletest.appendLine("subject to");
+	
 	rfile.appendLine("");
+	rfiletest.appendLine("");
+	
 	rfile.appendLine("   C2{k in SUBTASKS}: sum{i in ROBOTS}   f[i,k] <= 1;");
+	rfiletest.appendLine("   C2{k in SUBTASKS}: sum{i in ROBOTS}   f[i,k] <= 1;");
+	
 	rfile.appendLine("   C3{i in ROBOTS}:   sum{k in SUBTASKS} f[i,k]*S[k] <= L[i];  ");
+	rfiletest.appendLine("   C3{i in ROBOTS}:   sum{k in SUBTASKS} f[i,k]*S[k] <= L[i];");
+	
 	rfile.appendLine("   C4{k in SUBTASKS}: sum{j in TASKS}    P[j,k] =  1;       # we could assume the user gave this data correctly...");
+	rfiletest.appendLine("   C4{k in SUBTASKS}: sum{j in TASKS}    P[j,k] =  1;");
+	
 	rfile.appendLine("");
+	rfiletest.appendLine("");
+	
+	rfiletest.appendLine("   C5{y in ROLES}: 	sum{x in CAPABILITIES} G[y,x] <= C;");
+	rfiletest.appendLine("   C6{i in ROBOTS}: sum{x in CAPABILITIES} V[i,x] <= C;");
+	rfiletest.appendLine("   C7{i in ROBOTS}: sum{y in ROLES} Z[i,y] <= R;");
+	rfiletest.appendLine("   C8{k in SUBTASKS}: sum{y in ROLES} H[k,y] <= R;");
+	rfiletest.appendLine("");
+	
 	rfile.appendLine("   C5{j in TASKS, i in ROBOTS}: sum{k in SUBTASKS} f[i,k]*P[j,k] >= Lmin[j];");
+	rfiletest.appendLine("   C9{j in TASKS, i in ROBOTS}: sum{k in SUBTASKS} f[i,k]*P[j,k] >= Lmin[j];");
+	
 	rfile.appendLine("   C6{j in TASKS, i in ROBOTS}: sum{k in SUBTASKS} f[i,k]*P[j,k] <= Lmax[j];");
+	rfiletest.appendLine("   C10{j in TASKS, i in ROBOTS}: sum{k in SUBTASKS} f[i,k]*P[j,k] <= Lmax[j];");
+	
 	rfile.appendLine("");
-	rfile.appendLine("# se precisar, card(X) � |X|");
+	rfiletest.appendLine("");
+	
+	rfiletest.appendLine("   C11{i in ROBOTS, y in ROLES}: sum{x in CAPABILITIES} G[y,x]*V[i,x]*Z[i,y] = sum{x in CAPABILITIES} G[y,x]*Z[i,y];");
+	rfiletest.appendLine("   C12{i in ROBOTS, k in SUBTASKS}: sum{y in ROLES} H[k,y]*Z[i,y]*f[i,k] = sum{y in ROLES} H[k,y]*f[i,k];");
+	
+	rfile.appendLine("# se precisar, card(X) é |X|");
+	
 	rfile.appendLine("");
+	rfiletest.appendLine("");
+	
 	rfile.appendLine("solve;");
+	rfiletest.appendLine("solve;");
+	
 	rfile.appendLine("");
+	rfiletest.appendLine("");
+	
 	rfile.appendLine("display f;");
+	rfiletest.appendLine("display f;");
+	
 	rfile.appendLine("");
+	rfiletest.appendLine("");
+	
 	rfile.appendLine("data;");
+	rfiletest.appendLine("data;");
+	
 	rfile.appendLine("");
+	rfiletest.appendLine("");
 
 //SET ROBOTS	
 	//a1 a2 a3 - agente
@@ -1192,6 +1278,7 @@ public static void dataGLPK_toFile() {
 	}
 	agentes = agentes + ";           # i robots";
 	rfile.appendLine(agentes);
+	rfiletest.appendLine(agentes);
 	
 //SET TASKS	
 	//tn1 tn2 - taskcompN
@@ -1209,6 +1296,7 @@ public static void dataGLPK_toFile() {
 	}
 	Tasks = Tasks + ";        # j tasks";
 	rfile.appendLine(Tasks);
+	rfiletest.appendLine(Tasks);
 
 	
 //SET SUBTASKS  - rever sd2st1 sd2sd2 sd2st2 	
@@ -1230,43 +1318,75 @@ public static void dataGLPK_toFile() {
 	}
 	subtask = subtask + ";  # k subtasks";
 	rfile.appendLine(subtask);
-	rfile.appendLine(" ");
+	rfiletest.appendLine(subtask);
+	rfile.appendLine("");
 
+//SET CAPABILITIES
+	String capability = "set CAPABILITIES := ";
+	for (int i=0; i < capabilities.size(); i++) { capability += capabilities.get(i)+ " "; }
+	capability += ";			# x capabilities";
+	rfiletest.appendLine(capability);
+	
+//SET ROLES
+	String role = "set ROLES := ";
+	for (int i=0; i < roles.size(); i++) { role += roles.get(i)+ " "; }
+	role += ";			# y roles";
+	rfiletest.appendLine(role);
+	rfiletest.appendLine("");
+		
 //TASK LMIN
 	rfile.appendLine("# Task Lmin (by task type)");
+	rfiletest.appendLine("# Task Lmin (by task type)");
+	
 	rfile.appendLine("param Lmin:= # minimum number of subtasks in columns, tasks in rows");
+	rfiletest.appendLine("param Lmin:= # minimum number of subtasks in columns, tasks in rows");
 		//taskcompN
 		for (int tn=0;tn<ntasksCompN;tn++){
-			rfile.appendLine("      "+tasksCompN.get(tn) + "  0"); 
+			rfile.appendLine("      "+tasksCompN.get(tn) + "  0");
+			rfiletest.appendLine("      "+tasksCompN.get(tn) + "  0");
 		}
 		//taskcompL
 		for (int tl=0;tl<ntasksCompL;tl++){
-			rfile.appendLine("      "+tasksCompL.get(tl) + "  0"); 
+			rfile.appendLine("      "+tasksCompL.get(tl) + "  0");
+			rfiletest.appendLine("      "+tasksCompL.get(tl) + "  0");
 		}
 		//taskcompS
 		for (int sd=0;sd<ntasksCompS;sd++){
-			rfile.appendLine("      "+tasksCompS.get(sd) + "  0"); 
+			rfile.appendLine("      "+tasksCompS.get(sd) + "  0");
+			rfiletest.appendLine("      "+tasksCompS.get(sd) + "  0");
 		}
 		rfile.appendLine(";");
+		rfiletest.appendLine(";");
+		
 		rfile.appendLine(" ");
+		rfiletest.appendLine("");
 		
 //TASK LMAX
 		rfile.appendLine("# Task Lmax (by task type)");
+		rfiletest.appendLine("# Task Lmax (by task type)");
+		
 		rfile.appendLine("param Lmax:= # maximum number of subtasks in columns, tasks in rows");
+		rfiletest.appendLine("param Lmax:= # maximum number of subtasks in columns, tasks in rows");
 		//taskcompN
 		for (int tn=0;tn<ntasksCompN;tn++){
-			rfile.appendLine("      "+tasksCompN.get(tn) + "  1"); 
+			rfile.appendLine("      "+tasksCompN.get(tn) + "  1");
+			rfiletest.appendLine("      "+tasksCompN.get(tn) + "  1");
 		}
 		//taskcompL
 		for (int tl=0;tl<ntasksCompL;tl++){
-			rfile.appendLine("      "+tasksCompL.get(tl) + "  "+ getNumberSubTasks(tasksCompL.get(tl))); 
+			rfile.appendLine("      "+tasksCompL.get(tl) + "  "+ getNumberSubTasks(tasksCompL.get(tl)));
+			rfiletest.appendLine("      "+tasksCompL.get(tl) + "  "+ getNumberSubTasks(tasksCompL.get(tl))); 
 		}
 		//taskcompS
 		for (int sd=0;sd<ntasksCompS;sd++){
-			rfile.appendLine("      "+tasksCompS.get(sd) + "  1"); 
+			rfile.appendLine("      "+tasksCompS.get(sd) + "  1");
+			rfiletest.appendLine("      "+tasksCompS.get(sd) + "  1");
 		}
 		rfile.appendLine(";");
+		rfiletest.appendLine(";");
+		
 		rfile.appendLine(" ");
+		rfiletest.appendLine("");
 
 //AUX ARRAY
 		//adiciona todas as tasks em um unico array
@@ -1280,7 +1400,10 @@ public static void dataGLPK_toFile() {
 		
 //SUBTASK SIZE/PESO
 		rfile.appendLine("# Subtask size (in the task limit)");
+		rfiletest.appendLine("# Subtask size (in the task limit)");
+		
 		rfile.appendLine("param S:= # maximum number of subtasks in columns, tasks in rows");
+		rfiletest.appendLine("param S:= # maximum number of subtasks in columns, tasks in rows");
 		//String subtaskSize = "param S:= # maximum number of subtasks in columns, tasks in rows";
 		sdTasks.clear();
 		String Tasks2 = "";
@@ -1312,16 +1435,24 @@ public static void dataGLPK_toFile() {
 				}
 			
 				rfile.appendLine(Tasks2);
+				rfiletest.appendLine(Tasks2);
+				
 				Tasks2="";
 			}
 		}//for subtasks
 		
 			sdTasks.clear();
 		rfile.appendLine(";");
+		rfiletest.appendLine(";");
+		
 		rfile.appendLine(" ");
+		rfiletest.appendLine("");
+		
 
 //TASK STRUCTURE
 		rfile.appendLine("# Task Structure");
+		rfiletest.appendLine("# Task Structure");
+		
 		String subtaskStruct = "param P: ";
 		sdTasks.clear();
 		for (int t=0;t<taskList.size();t++){
@@ -1338,7 +1469,9 @@ public static void dataGLPK_toFile() {
 			subtaskStruct = subtaskStruct + taskX.getSubTask()+ " ";
 		}
 		subtaskStruct = subtaskStruct + ":= # subtasks in columns, tasks in row";
+		
 		rfile.appendLine(subtaskStruct);
+		rfiletest.appendLine(subtaskStruct);
 		
 		//para cada task
 		String Tasks3 = "";
@@ -1365,18 +1498,28 @@ public static void dataGLPK_toFile() {
 					if (!sdTasks.containsKey(taskX.getTask()))
 						sdTasks.put(taskX.getTask(), taskX.getTask());
 			}//for subtasks
+			
 			rfile.appendLine(Tasks3);
+			rfiletest.appendLine(Tasks3);
+			
 			Tasks3="";
 			sdTasks.clear();
 		}//for task
+		
 		rfile.appendLine(";");
+		rfiletest.appendLine(";");
+		
 		//Tasks3 = Tasks3 + ";";
 		
 		rfile.appendLine(" ");
+		rfiletest.appendLine("");
+		
 		rfile.appendLine(" ");
 
 //SUBTASKS PER TASK 		
 		rfile.appendLine("# Number of Subtasks per Task");
+		rfiletest.appendLine("# Number of Subtasks per Task");
+		
 		String nsubTk = "param N := ";
 		//taskcompN
 		for (int tn=0;tn<ntasksCompN;tn++){
@@ -1395,10 +1538,15 @@ public static void dataGLPK_toFile() {
 		
 		nsubTk=nsubTk+"; # task 1 has 2 subtasks, etc.";
 		rfile.appendLine(nsubTk);
+		rfiletest.appendLine(nsubTk);
+		
 		rfile.appendLine(" ");
+		rfiletest.appendLine("");
 		
 //ROBOT LIMIT
 		rfile.appendLine("# Task Limits per Robot");
+		rfiletest.appendLine("# Task Limits per Robot");
+		
 		String limitAg = "param L :=";
 		for (int r=0;r<nAgents;r++){
 			agentX = agentsList.get(r);
@@ -1407,12 +1555,197 @@ public static void dataGLPK_toFile() {
 		}
 		limitAg=limitAg.substring(0, limitAg.length()-1);
 		limitAg = limitAg + "; # 1 6 means robot 1 can handle 6 tasks, etc.";
-		rfile.appendLine(limitAg);
-		rfile.appendLine("");
 		
+		rfile.appendLine(limitAg);
+		rfiletest.appendLine(limitAg);
+		
+		rfile.appendLine("");
+		rfiletest.appendLine("");
 
+//ROLE STRUCTURE
+		rfiletest.appendLine("# Role Structure");
+		
+		String roleStruct = "param G: ";
+		
+		for(int i = 0; i < capabilities.size(); i++) { roleStruct += capabilities.get(i) + " "; }
+		
+		roleStruct += " := #capabilities in columns, roles in rows";
+		
+		rfiletest.appendLine(roleStruct);
+		
+		String rol = "";
+		role currRole= null; //current role in the loop
+		
+		//para cada role
+		for (int i = 0; i < roleCapabilities.size(); i++)
+		{
+			currRole=roleCapabilities.get(i);
+			rol = rol + currRole.getRoleDesc() + " ";
+			
+			//para cada capability
+			for (int j=0;j<capabilities.size();j++)
+			{
+				String cap = capabilities.get(j);
+				
+				if (currRole.existCapabily(cap)) { rol = rol + "1 "; }
+				else { rol = rol + "0 "; }
+			}
+
+			rfiletest.appendLine(rol);
+			rol="";
+
+		}
+		
+		rfiletest.appendLine(";");
+		rfiletest.appendLine("");
+
+//ROBOT STRUCTURE
+		rfiletest.appendLine("# Robot Structure");
+		
+		String robotStruct = "param V: ";
+		
+		for(int i = 0; i < capabilities.size(); i++) { robotStruct += capabilities.get(i) + " "; }
+		
+		robotStruct += ":= #capabilities in columns, robots in rows";
+		
+		rfiletest.appendLine(robotStruct);
+		
+		String a = "";
+		agent currAg = null; //current agent in the loop
+		
+		//para cada agente
+		for (int i = 0; i < agentsList.size(); i++)
+		{
+			currAg = agentsList.get(i);
+			a = a + currAg.getAgentDesc() + " ";
+			
+			//para cada capability
+			for (int j=0;j<capabilities.size();j++)
+			{
+				String cap = capabilities.get(j);
+				
+				if (currAg.existCapabily(cap)) { a = a + "1 "; }
+				else { a = a + "0 "; }
+			}
+			
+			rfiletest.appendLine(a);
+			a="";		
+		}
+		
+		rfiletest.appendLine(";");
+		rfiletest.appendLine("");
+
+		robotStruct = "param Z: ";
+		
+		for(int i = 0; i < roles.size(); i++) { robotStruct += roles.get(i) + " "; }
+		
+		robotStruct += ":= #roles in columns, robots in rows";
+		
+		rfiletest.appendLine(robotStruct);
+		
+		a = "";
+		currAg = null; //current agent in the loop
+		
+		//para cada agente
+		for (int i = 0; i < agentsList.size(); i++)
+		{
+			currAg = agentsList.get(i);
+			a = a + currAg.getAgentDesc() + " ";
+			
+			//para cada role
+			for (int j=0;j<roles.size();j++)
+			{
+				String rol2 = roles.get(j);
+				
+				if (currAg.hasRole(rol2)) { a = a + "1 "; }
+				else { a = a + "0 "; }
+			}
+			
+			rfiletest.appendLine(a);
+			a="";
+		}
+		
+		rfiletest.appendLine(";");
+		rfiletest.appendLine("");
+
+//SUBTASK STRUCTURE
+		rfiletest.appendLine("# Subtask Structure");
+		
+		subtaskStruct = "param H: ";
+		
+		for(int i = 0; i < roles.size(); i++) { subtaskStruct += roles.get(i) + " "; }
+		
+		subtaskStruct += ":= #roles in columns, subtasks in rows ";
+		
+		rfiletest.appendLine(subtaskStruct);
+		
+		sdTasks.clear();
+		String subT = "";
+		String taskRole = "";
+		sdTasks.clear();
+		//para cada subtask
+		for (int t=0;t<taskList.size();t++)
+		{
+			task taskX= taskList.get(t);
+			if(taskX.getTaskType().equals("sd"))
+			{
+				if (!sdTasks.containsKey(taskX.getTask()))
+				{
+					String hasRole[] = new String[roles.size()];
+					for (int i = 0; i < roles.size(); i++) { hasRole[i] = "0"; }
+					
+					
+					for (int i = 0; i < taskList.size(); i++)
+					{
+						task taskX2 = taskList.get(i);
+						if(taskX2.getTask().equals(taskX.getTask()))
+						{
+							for (int j = 0; j < roles.size(); j++)
+							{
+								if(taskX2.getRole().equals(roles.get(j))) hasRole[j] = "1";
+							}
+						}
+					}
+					
+					subT = subT + taskX.getTask()+taskX.getTask();
+					sdTasks.put(taskX.getTask(), taskX.getTask());
+					
+					for (int i = 0; i < hasRole.length; i++) { subT += " " + hasRole[i]; }
+					rfiletest.appendLine(subT);
+						
+				}
+			}
+			
+			else 
+			{ 
+				subT = subT + taskX.getSubTask(); 
+			
+				taskRole = taskX.getRole();
+			
+				for(int i = 0; i < roles.size(); i++)
+				{
+					if (taskRole == roles.get(i)) { subT += " 1"; }
+					else { subT += " 0"; }
+				}
+				rfiletest.appendLine(subT);
+			}
+
+			subT="";
+			
+		}
+		
+		rfiletest.appendLine(";");
+		rfiletest.appendLine("");
+
+//SIZES		
+		rfiletest.appendLine("param C := " + capabilities.size() + ";");
+		rfiletest.appendLine("param R := " + roles.size() + ";");
+
+		
 //UTILITY	
 				rfile.appendLine("# Utility");
+				rfiletest.appendLine("# Utility");
+				
 				//param U: 1 2 3 4 5 6 := # subtasks in columns, robots in rows
 				String subtaskUtility = "param U: ";
 				sdTasks.clear();
@@ -1430,7 +1763,9 @@ public static void dataGLPK_toFile() {
 						subtaskUtility = subtaskUtility + taskX.getSubTask()+ " ";
 				}
 				subtaskUtility = subtaskUtility + ":= # subtasks in columns, robots in row";
+				
 				rfile.appendLine(subtaskUtility);
+				rfiletest.appendLine(subtaskUtility);
 
 			String robotPayoff;
 			int payoff=0;
@@ -1454,7 +1789,7 @@ public static void dataGLPK_toFile() {
 								payoff=payoff+agentX2.getPayoffAijGLPK(taskX2.getSubTask());
 								//payoff=payoff+agentX2.getPayoffAijPlanner(taskX2.getSubTask());
 								
-								//System.out.println("payoff da subtask:"+taskX2.getSubTask()+" �:"+agentX2.getPayoffAijPlanner(taskX2.getSubTask()));
+								//System.out.println("payoff da subtask:"+taskX2.getSubTask()+" é:"+agentX2.getPayoffAijPlanner(taskX2.getSubTask()));
 							}
 						}
 						robotPayoff=robotPayoff+payoff+" ";
@@ -1473,16 +1808,24 @@ public static void dataGLPK_toFile() {
 			//zerar o payoff
 				payoff=0;
 			}
+			
 			rfile.appendLine(robotPayoff);
+			rfiletest.appendLine(robotPayoff);
 		}
 			rfile.appendLine(";");
-			
+			rfiletest.appendLine(";");
 		
 	rfile.appendLine(" ");
+	rfiletest.appendLine("");
+	
 	rfile.appendLine("end;");
+	rfiletest.appendLine("end;");
+	
 	rfile.appendLine(" ");
+	rfiletest.appendLine("");
 
 	rfile.closeFile();
+	rfiletest.closeFile();
 }
 
 
